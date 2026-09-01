@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>무신사 메타 광고 자동화 — 전사 확장 구조 검토</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=DM+Sans:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --accent: #1877F2;
+    --accent-light: #EBF3FF;
+    --text: #0E1117;
+    --text-2: #4B5563;
+    --text-3: #9CA3AF;
+    --border: #E2E6EC;
+    --bg: #F7F8FA;
+    --surface: #FFFFFF;
+    --success: #16A34A;
+    --success-light: #DCFCE7;
+    --warning: #D97706;
+  }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--text);
+    background: #fff;
+    font-size: 10.5pt;
+    line-height: 1.65;
+    padding: 0;
+    margin: 0;
+  }
+
+  @page {
+    size: A4;
+    margin: 18mm 16mm 18mm 16mm;
+  }
+
+  @media print {
+    body { font-size: 9.5pt; }
+    .page-break { page-break-before: always; }
+    section { page-break-inside: avoid; }
+    .no-break { page-break-inside: avoid; }
+  }
+
+  .wrap {
+    max-width: 740px;
+    margin: 0 auto;
+    padding: 32px 24px 48px;
+  }
+
+  /* HEADER */
+  .doc-header {
+    border-bottom: 2.5px solid var(--text);
+    padding-bottom: 20px;
+    margin-bottom: 32px;
+  }
+
+  .doc-eyebrow {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 9pt;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+
+  .doc-title {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 22pt;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 12px;
+    color: var(--text);
+  }
+
+  .doc-title span { color: var(--accent); }
+
+  .doc-subtitle {
+    font-size: 10pt;
+    color: var(--text-2);
+    line-height: 1.7;
+    margin-bottom: 14px;
+    max-width: 600px;
+  }
+
+  .doc-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .doc-meta-item {
+    font-size: 8.5pt;
+    font-weight: 500;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 3px 10px;
+    border-radius: 20px;
+    color: var(--text-2);
+  }
+
+  /* SECTION */
+  section {
+    margin-bottom: 36px;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 8pt;
+    font-weight: 700;
+    color: var(--text-3);
+    letter-spacing: 0.05em;
+  }
+
+  .section-header h2 {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14pt;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  section > p {
+    color: var(--text-2);
+    margin-bottom: 16px;
+    font-size: 10pt;
+  }
+
+  /* COMPARE */
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 0;
+  }
+
+  .compare-card {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .compare-card.after { border-color: var(--accent); }
+
+  .compare-header {
+    padding: 8px 14px;
+    font-size: 9pt;
+    font-weight: 600;
+    background: var(--bg);
+  }
+
+  .compare-card.after .compare-header {
+    background: var(--accent-light);
+    color: var(--accent);
+  }
+
+  .compare-body {
+    padding: 12px 14px;
+    font-size: 9.5pt;
+  }
+
+  .compare-body ol {
+    padding-left: 16px;
+  }
+
+  .compare-body li {
+    margin-bottom: 8px;
+    color: var(--text-2);
+    line-height: 1.6;
+  }
+
+  .pain-point {
+    display: inline-block;
+    margin-top: 3px;
+    font-size: 8.5pt;
+    color: var(--warning);
+    font-weight: 500;
+  }
+
+  /* STACK */
+  .stack-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .stack-item {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+
+  .stack-icon { font-size: 16pt; line-height: 1; }
+
+  .stack-info h4 {
+    font-size: 9.5pt;
+    font-weight: 600;
+    margin-bottom: 3px;
+  }
+
+  .stack-info p {
+    font-size: 8.5pt;
+    color: var(--text-2);
+    line-height: 1.55;
+    margin: 0;
+  }
+
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8pt;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+
+  /* STATS */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .stat-card {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 14px;
+    text-align: center;
+  }
+
+  .stat-card.accent {
+    border-color: var(--accent);
+    background: var(--accent-light);
+  }
+
+  .stat-value {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 22pt;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 5px;
+    color: var(--text);
+  }
+
+  .stat-card.accent .stat-value { color: var(--accent); }
+
+  .stat-label {
+    font-size: 8.5pt;
+    font-weight: 600;
+    color: var(--text-2);
+    margin-bottom: 4px;
+  }
+
+  .stat-delta {
+    font-size: 8pt;
+    color: var(--text-3);
+  }
+
+  /* LOG */
+  .log-list { display: flex; flex-direction: column; gap: 0; }
+
+  .log-item {
+    display: grid;
+    grid-template-columns: 72px 1fr;
+    gap: 14px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .log-item:last-child { border-bottom: none; }
+
+  .log-date {
+    font-size: 8pt;
+    font-weight: 600;
+    color: var(--text-3);
+    padding-top: 2px;
+  }
+
+  .log-content h4 {
+    font-size: 10pt;
+    font-weight: 600;
+    margin-bottom: 3px;
+  }
+
+  .log-content p {
+    font-size: 9pt;
+    color: var(--text-2);
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  /* EXPAND */
+  .expand-grid { display: flex; flex-direction: column; gap: 0; }
+
+  .expand-item {
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .expand-item:last-child { border-bottom: none; }
+
+  .expand-num {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--text);
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 9pt;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .expand-content h4 {
+    font-size: 10pt;
+    font-weight: 600;
+    margin-bottom: 5px;
+  }
+
+  .expand-content p {
+    font-size: 9pt;
+    color: var(--text-2);
+    line-height: 1.65;
+    margin: 0;
+  }
+
+  .code-ref-block {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+    padding: 10px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+
+  .code-ref-label {
+    font-size: 8pt;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--text-3);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .code-ref-link {
+    font-size: 9pt;
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .expand-content ul {
+    margin: 6px 0 0 0;
+    padding-left: 16px;
+    font-size: 9pt;
+    line-height: 1.7;
+    color: var(--text-2);
+  }
+
+  .expand-content ul li { margin-bottom: 4px; }
+
+  /* FOOTER */
+  .doc-footer {
+    margin-top: 36px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .doc-footer-label {
+    font-size: 8pt;
+    color: var(--text-3);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="doc-header">
+    <div class="doc-eyebrow">Meta Ads Automation · 전사 확장 구조 검토</div>
+    <h1 class="doc-title">무신사 메타 광고 자동화 —<br><span>전사 확장 구조 검토</span></h1>
+    <p class="doc-subtitle">Claude Code를 활용하여 Meta 광고 자동 생성 솔루션을 직접 개발했습니다. 무신사, 메디힐 글로벌, 29CM 등 캠페인에서 검증된 프로세스를 타 캠페인으로 확장하기 위해 현황 및 고려사항을 정리합니다.</p>
+    <div class="doc-meta">
+      <span class="doc-meta-item">현재 적용: 무신사, 메디힐 글로벌, 29CM, 버킷스토어</span>
+      <span class="doc-meta-item">월 처리량: 700건+ (26.07 무신사 기준)</span>
+      <span class="doc-meta-item">개발 도구: Claude Code + Meta Marketing API</span>
+    </div>
+  </header>
+
+  <!-- 01 -->
+  <section>
+    <div class="section-header">
+      <span class="section-label">01</span>
+      <h2>배경 및 문제 정의</h2>
+    </div>
+    <p>디지털 광고 운영에서 반복적인 광고 세팅 업무는 많은 시간을 소비하면서도 휴먼 에러가 빈번하게 발생하는 영역이었습니다. 자동화를 통해 운영 효율성과 정확도를 동시에 개선할 수 있다고 판단하여 솔루션 개발에 착수했습니다.</p>
+    <div class="compare-grid no-break">
+      <div class="compare-card before">
+        <div class="compare-header">⬛ 기존 프로세스</div>
+        <div class="compare-body">
+          <ol>
+            <li>세팅 담당자가 <strong>대시보드에서 기존 광고 복사</strong> 후 광고명·문구·URL·매개변수 등 모든 요소 직접 입력<br><span class="pain-point">⚠ 입력 과정에서 휴먼 에러 빈발</span></li>
+            <li>이미지를 <strong>로컬 PC → 대시보드로 직접 업로드</strong> 후 등록<br><span class="pain-point">⚠ 소재 1개당 5분 이상 소요</span></li>
+            <li>별도 인원이 <strong>크로스체크</strong> 진행</li>
+          </ol>
+        </div>
+      </div>
+      <div class="compare-card after">
+        <div class="compare-header">✅ 변경 프로세스</div>
+        <div class="compare-body">
+          <ol>
+            <li>이미지 포함, 세팅 요소를 <strong><a href="https://docs.google.com/spreadsheets/d/12rgkOKJCFr9AGaUkQibQXpw6f2qRzmXqc1cPoBTZZAg/edit?pli=1&gid=0#gid=0" target="_blank" style="color:inherit;text-decoration:underline;text-underline-offset:2px;">자동생성 시트</a>에 기재</strong> 후 솔루션 실행</li>
+            <li>솔루션이 <strong>Meta API로 광고 자동 대량 등록</strong></li>
+            <li>세팅 담당자가 <strong>API 미지원 일부 요소만</strong> 업데이트 및 더블체크</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 -->
+  <section>
+    <div class="section-header">
+      <span class="section-label">02</span>
+      <h2>솔루션 개요</h2>
+    </div>
+    <p>Google Sheets를 입력 인터페이스로, 로컬 Flask 서버를 중개 레이어로, Meta Marketing API를 실행 엔드포인트로 연결하는 구조입니다. Claude Code를 활용해 기획·개발·운영 고도화를 직접 수행했습니다.</p>
+    <div class="stack-grid no-break">
+      <div class="stack-item">
+        <div class="stack-icon">📊</div>
+        <div class="stack-info">
+          <h4>Google Sheets</h4>
+          <p>세팅 인터페이스. 광고명·문구·URL·소재 파일명 등 입력. VLOOKUP으로 campaign/adset ID 자동 매핑.</p>
+        </div>
+      </div>
+      <div class="stack-item">
+        <div class="stack-icon">⚙️</div>
+        <div class="stack-info">
+          <h4>Local Flask Server</h4>
+          <p>로컬 실행 서버(포트 8765). 시트 데이터 파싱, 이미지 업로드, API 호출 조율. Apps Script 사이드바에서 트리거.</p>
+        </div>
+      </div>
+      <div class="stack-item">
+        <div class="stack-icon">🔵</div>
+        <div class="stack-info">
+          <h4>Meta Marketing API</h4>
+          <p>v25.0. 광고 생성, 이미지 해시 발급, 지면별 소재 커스터마이징(<code>asset_feed_spec</code>) 지원.</p>
+        </div>
+      </div>
+      <div class="stack-item">
+        <div class="stack-icon">🤖</div>
+        <div class="stack-info">
+          <h4>Claude Code</h4>
+          <p>솔루션 기획·개발·이슈 대응·고도화 전 과정에 활용. 별도 개발 인력 없이 실무 담당자가 직접 운영.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 -->
+  <section>
+    <div class="section-header">
+      <span class="section-label">03</span>
+      <h2>운영 성과</h2>
+    </div>
+    <div class="stat-grid no-break">
+      <div class="stat-card">
+        <div class="stat-label">월 자동 세팅 건수</div>
+        <div class="stat-value">700+</div>
+        <div class="stat-delta">무신사 캠페인 26년 7월 기준</div>
+      </div>
+      <div class="stat-card accent">
+        <div class="stat-label">광고 세팅 시간 단축</div>
+        <div class="stat-value">↓90%</div>
+        <div class="stat-delta">월별 소재 세팅 리소스 100시간 이상 세이브</div>
+        <div class="stat-delta" style="margin-top:5px;font-size:6.5pt;color:var(--text-3);line-height:1.7;">소재 1개당 약 10분 → 10개 10분 이하<br>700건 기준 117시간 → 17시간</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">오류율 개선</div>
+        <div class="stat-value">↓90%</div>
+        <div class="stat-delta">대시보드 등록 과정에서 휴먼 에러 제거</div>
+      </div>
+    </div>
+    <p>세팅 시간 단축 외 AE 수기 세팅 과정에서 발생하던 휴먼 에러가 구조적으로 제거되었으며, 크로스체크 리소스를 API 미지원 항목 점검에만 집중할 수 있게 되었습니다.</p>
+  </section>
+
+  <!-- 04 -->
+  <section>
+    <div class="section-header">
+      <span class="section-label">04</span>
+      <h2>운영 중 개선 이력</h2>
+    </div>
+    <p>실무 운영 과정에서 발생한 이슈를 지속 발굴하며 고도화해왔습니다.</p>
+    <div class="log-list">
+      <div class="log-item">
+        <div class="log-date">중복 방지</div>
+        <div class="log-content">
+          <h4>광고 중복 생성 방지 로직 추가</h4>
+          <p>실행 결과가 기입된 행은 재실행 시 자동 스킵 처리</p>
+        </div>
+      </div>
+      <div class="log-item">
+        <div class="log-date">안정성</div>
+        <div class="log-content">
+          <h4>일시 장애 자동 재시도 (Exponential Backoff)</h4>
+          <p>Meta API 일시 장애 시 최대 5회 자동 재시도. 연속 요청 간 1초 딜레이로 대량 실행 안정화</p>
+        </div>
+      </div>
+      <div class="log-item">
+        <div class="log-date">세팅 항목</div>
+        <div class="log-content">
+          <h4>설명(description) 컬럼 추가</h4>
+          <p>빈값/공백 입력 시 API 에러 방지 처리 포함</p>
+        </div>
+      </div>
+      <div class="log-item">
+        <div class="log-date">지면 최적화</div>
+        <div class="log-content">
+          <h4>지면별 다른 소재 사이즈 등록 지원</h4>
+          <p><code>asset_feed_spec</code> 방식 도입. 피드(정방형)/릴스/스토리 지면별 다른 이미지 자동 분기. 릴스·스토리 기본 문구 공백 처리 지원</p>
+        </div>
+      </div>
+      <div class="log-item">
+        <div class="log-date">확장성</div>
+        <div class="log-content">
+          <h4>멀티 캠페인 구조 지원</h4>
+          <p>포트 분리 방식으로 복수 캠페인 동시 운영 가능 구조 검증 (메디힐 글로벌, 29CM, 버킷스토어 적용 완료)</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 -->
+  <section>
+    <div class="section-header">
+      <span class="section-label">05</span>
+      <h2>전사 확장 고려사항</h2>
+    </div>
+    <p>무신사 캠페인에서 검증된 구조를 타 캠페인으로 확장하기 위해 아래 사항을 고려해야 합니다.</p>
+    <div class="expand-grid">
+      <div class="expand-item">
+        <div class="expand-num">1</div>
+        <div class="expand-content">
+          <h4>광고주별 액세스 토큰 발급 및 BM 권한 설정 필요</h4>
+          <p>Meta Marketing API 사용에는 두 가지 자격이 필요합니다. <strong>Meta App(App ID·App Secret)</strong>은 매드업이 한 번 등록하여 팀 단위로 공유하는 API 사용 자격이며, <strong>액세스 토큰</strong>은 특정 광고 계정에 실제 접근하는 열쇠로 BM 시스템 유저 단위로 발급됩니다. 현재는 광고주 BM에서 시스템 유저를 생성해 광고주별 토큰을 각각 발급받는 방식으로 운영 중입니다. 전사 확장 시에는 매드업 BM에 시스템 유저를 생성하고 광고주가 계정 접근 권한을 매드업 BM에 부여하면, 토큰을 통합 관리하거나 팀 단위로 구분하는 방식으로 온보딩 절차를 간소화할 수 있습니다.</p>
+        </div>
+      </div>
+      <div class="expand-item">
+        <div class="expand-num">2</div>
+        <div class="expand-content">
+          <h4>서버 포트 분리 방식으로 독립 운영</h4>
+          <p>현재는 캠페인별로 폴더를 복사하고 포트를 분리하여 독립 서버로 운영하는 방식으로 진행하고 있습니다. 캠페인 수가 늘어날 경우 단일 서버에서 시트 ID로 분기하는 구조로의 전환도 고려할 수 있습니다.</p>
+        </div>
+      </div>
+      <div class="expand-item">
+        <div class="expand-num">3</div>
+        <div class="expand-content">
+          <h4>캠페인별 세팅 컨디션 차이 대응</h4>
+          <p>광고주·캠페인마다 활용하는 세팅 항목이 다릅니다. 실제 캠페인 간 주요 차이점은 다음과 같습니다.</p>
+          <ul>
+            <li><strong>tracking_specs</strong>: 무신사는 픽셀 + 앱 트래킹 스펙을 모두 사용하지만, 메디힐 글로벌은 MMP 별도 운영으로 tracking_specs 미사용 — 코드 분기 처리 필요</li>
+            <li><strong>appsecret_proof</strong>: 메디힐은 Meta 보안 정책 상 appsecret_proof 파라미터 추가 서명이 필요해 별도 구현 적용 (무신사는 미사용)</li>
+            <li><strong>소재 타입</strong>: 무신사는 이미지 전용(<code>upload_image</code>)이지만, 메디힐은 영상 소재 지원(<code>upload_media</code>) — 확장 시 소재 업로드 로직 분기 필요</li>
+            <li><strong>CPAS 카탈로그 광고</strong>: Meta API 정책상 카탈로그 광고(<code>promoted_object</code> 방식)는 자동 생성 불가 — 수동 세팅 영역으로 별도 관리</li>
+          </ul>
+          <p style="margin-top:6px">캠페인 온보딩 시 세팅 컨디션을 사전 정의하고 <code>config.py</code>에 반영하는 작업이 필요합니다.</p>
+        </div>
+      </div>
+      <div class="expand-item">
+        <div class="expand-num">4</div>
+        <div class="expand-content">
+          <h4>Meta API 미지원 항목은 수동 처리 유지</h4>
+          <p>URL 매개변수(url_tags) 등 일부 항목은 Meta API 정책상 광고 생성 시점에 적용이 제한됩니다. 이 항목들은 자동화 이후 담당자 수동 업데이트가 필요하며, 캠페인 온보딩 시 자동화 가능 항목과 수동 처리 항목을 명확히 구분해야 합니다.</p>
+        </div>
+      </div>
+      <div class="expand-item">
+        <div class="expand-num">5</div>
+        <div class="expand-content">
+          <h4>배포 시 고유값 제거 버전으로 제공 권장</h4>
+          <p>현재 코드는 무신사 캠페인 기준으로 작성되어 GCP 서비스 계정 JSON, Meta 액세스 토큰, 광고 계정 ID 등 고유 인증정보가 포함되어 있습니다. 타 캠페인 적용 시에는 해당 값을 빈값 또는 플레이스홀더로 처리한 버전으로 배포하여, 담당 AE가 온보딩 시 직접 값을 입력할 수 있도록 안내하는 방식을 권장합니다.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-ref-block">
+      <span class="code-ref-label">참고 시트</span>
+      <a class="code-ref-link" href="https://docs.google.com/spreadsheets/d/12rgkOKJCFr9AGaUkQibQXpw6f2qRzmXqc1cPoBTZZAg/edit?pli=1&gid=0#gid=0">무신사 Meta 광고 자동 생성 시트 →</a>
+    </div>
+    <div class="code-ref-block">
+      <span class="code-ref-label">참고 코드</span>
+      <a class="code-ref-link" href="https://www.dropbox.com/scl/fi/203tiyewo65v3ip53ivpw/ad_creator.py?rlkey=2y0wbsh4ne1jypoxgq691shm8&dl=0">무신사 Meta 광고 자동 생성 코드 (ad_creator.py) →</a>
+    </div>
+  </section>
+
+  <!-- 06 -->
+  <section>
+    <div class="section-header">
+      <span class="section-label">06</span>
+      <h2>추가 확장 가능성</h2>
+    </div>
+    <p>본 솔루션의 구조(시트 입력 → 로컬 서버 → 매체 API 호출)는 Meta에 종속되지 않습니다. 메디힐 글로벌 캠페인에서 동일한 코드 아키텍처를 기반으로 <strong>TikTok Ads API</strong> 및 <strong>싱글원 API</strong>를 활용한 광고 자동 세팅 솔루션을 추가 개발한 사례가 있으며, API를 공식 지원하는 매체라면 동일한 방식으로 적용 가능합니다. 이를 통해 전사 광고 운영 자동화 범위를 매체 단위로 점진적으로 넓혀갈 수 있습니다.</p>
+
+    <div class="code-ref-block">
+      <span class="code-ref-label">참고 코드</span>
+      <a class="code-ref-link" href="https://www.dropbox.com/scl/fi/6xjfikqj19xz1ryjnude4/ad_creator.py?rlkey=x7xbwejdrlc0ot3kxwg0tcc5i&st=ogvrig10&dl=0">메디힐 TikTok 광고 자동 생성 코드 (ad_creator.py) →</a>
+    </div>
+    <div class="code-ref-block">
+      <span class="code-ref-label">참고 코드</span>
+      <a class="code-ref-link" href="https://www.dropbox.com/scl/fi/77uqiuv1wfcu4gfyi6cdf/singleone_client.py?rlkey=h4gjnapf4yw9tuik71wm30fzr&st=oelpjhea&dl=0">메디힐 싱글원 광고 자동 생성 코드 (singleone_client.py) →</a>
+    </div>
+  </section>
+
+  <footer class="doc-footer">
+    <span class="doc-footer-label">Meta Ads Automation 전사 확장 구조 검토</span>
+    <span class="doc-footer-label">마케팅5팀 김혜인</span>
+  </footer>
+
+</div>
+</body>
+</html>
